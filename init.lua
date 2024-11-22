@@ -159,7 +159,7 @@ vim.opt.cursorline = true
 vim.opt.scrolloff = 10
 
 -- Sets the terminal (Powershell 7)
-vim.g.terminal_emulator = 'pwsh'
+vim.opt.shell = 'pwsh.exe'
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -192,6 +192,21 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+vim.api.nvim_create_autocmd('FileType', {
+  callback = function(args)
+    local ft = args.match
+    local indent = {
+      html = 2,
+      c = 8,
+    }
+
+    local size = indent[ft] or 4 -- Default to 4 spaces if language not listed
+    vim.bo.tabstop = size
+    vim.bo.shiftwidth = size
+    vim.bo.expandtab = true -- Use spaces instead of tabs
+  end,
+})
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -234,14 +249,13 @@ vim.opt.rtp:prepend(lazypath)
 require('lazy').setup({
 
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
   {
     'andweeb/presence.nvim',
     -- The setup config table shows all available config options with their default values:
     opts = {
       -- General options
       auto_update = true, -- Update activity based on autocmd events (if `false`, map or manually execute `:lua package.loaded.presence:update()`)
-      neovim_image_text = 'I use Neovim btw', -- Text displayed when hovered over the Neovim image
+      neovim_image_text = 'i use neovim btw', -- Text displayed when hovered over the Neovim image
       main_image = 'file', -- Main image display (either "neovim" or "file")
       client_id = '793271441293967371', -- Use your own Discord application client id (not recommended)
       log_level = nil, -- Log messages at or above this level (one of the following: "debug", "info", "warn", "error")
@@ -262,13 +276,13 @@ require('lazy').setup({
       line_number_text = 'Line %s out of %s', -- Format string rendered when `enable_line_number` is set to true (either string or function(line_number: number, line_count: number): string)
     },
   },
+
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
   --
   -- Use `opts = {}` to force a plugin to be loaded.
   --
-
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`. This is equivalent to the following Lua:
   --    require('gitsigns').setup({ ... })
@@ -868,15 +882,16 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'Mofiqul/vscode.nvim',
+    'navarasu/onedark.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
       -- Lua:
       -- For dark theme (neovim's default)
-      vim.o.background = 'dark'
       -- For light theme
-
+      require('onedark').load()
+      --[[
       local c = require('vscode.colors').get_colors()
+
       require('vscode').setup {
         -- Alternatively set style in setup
         -- style = 'light'
@@ -897,6 +912,7 @@ require('lazy').setup({
         color_overrides = {
           vscBack = '#000000',
           vscTabCurrent = '#000000',
+          vscGreen = '#808080',
         },
 
         -- Override highlight groups (see ./lua/vscode/theme.lua)
@@ -906,11 +922,51 @@ require('lazy').setup({
           Cursor = { fg = c.vscDarkBlue, bg = c.vscLightGreen, bold = true },
         },
       }
-      -- require('vscode').load()
+      ]]
+      --
+      require('onedark').setup {
+        -- Main options --
+        style = 'darker', -- Default theme style. Choose between 'dark', 'darker', 'cool', 'deep', 'warm', 'warmer' and 'light'
+        transparent = false, -- Show/hide background
+        term_colors = true, -- Change terminal color as per the selected theme style
+        ending_tildes = false, -- Show the end-of-buffer tildes. By default they are hidden
+        cmp_itemkind_reverse = false, -- reverse item kind highlights in cmp menu
+
+        -- toggle theme style ---
+        toggle_style_key = '<leader>zz', -- keybind to toggle theme style. Leave it nil to disable it, or set it to a string, for example "<leader>ts"
+        toggle_style_list = { 'dark', 'darker', 'cool', 'deep', 'warm', 'warmer', 'light' }, -- List of styles to toggle between
+
+        -- Change code style ---
+        -- Options are italic, bold, underline, none
+        -- You can configure multiple style with comma separated, For e.g., keywords = 'italic,bold'
+        code_style = {
+          comments = 'italic',
+          keywords = 'none',
+          functions = 'none',
+          strings = 'none',
+          variables = 'none',
+        },
+
+        -- Lualine options --
+        lualine = {
+          transparent = false, -- lualine center bar transparency
+        },
+
+        -- Custom Highlights --
+        colors = {}, -- Override default colors
+        highlights = {}, -- Override highlight groups
+
+        -- Plugins Config --
+        diagnostics = {
+          darker = true, -- darker colors for diagnostic
+          undercurl = true, -- use undercurl instead of underline for diagnostics
+          background = true, -- use background color for virtual text
+        },
+      }
 
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
-      vim.cmd.colorscheme 'vscode'
+      vim.cmd.colorscheme 'onedark'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
@@ -975,7 +1031,7 @@ require('lazy').setup({
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
         additional_vim_regex_highlighting = { 'ruby' },
       },
-      indent = { enable = true, disable = { 'ruby' } },
+      indent = { enable = true },
     },
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
@@ -995,9 +1051,9 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.indent_line',
+  -- krequire 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
